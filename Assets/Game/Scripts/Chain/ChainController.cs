@@ -68,11 +68,32 @@ namespace Game.Chain
             _bus = bus;
             _fsm = fsm;
             _model.Config = _level.BuildChainConfig();
-
-            // Seed initial balls (pre-placed at path start, behind the path origin).
             _spawner.Configure(_level.SpawnQueue, _level.SpawnInterval);
-            for (int i = 0; i < _level.InitialBalls.Count; i++)
-                SpawnAtTail(_level.InitialBalls[i]);
+
+            // Initial chain: pre-place every ball at its correct distance in
+            // one segment. We can't reuse SpawnAtTail here because that runtime
+            // path assumes the chain has moved between calls. Instead we pack
+            // the segment so the front ball is at distance (n-1)*BallDiameter
+            // and the back ball is at distance 0 — every ball is on the visible
+            // path from frame 1.
+            var initial = _level.InitialBalls;
+            if (initial.Count > 0)
+            {
+                var seg = new ChainSegment();
+                seg.HeadDistance = (initial.Count - 1) * _model.Config.BallDiameter;
+                _model.Segments.Add(seg);
+                for (int i = 0; i < initial.Count; i++)
+                {
+                    var color = initial[i];
+                    var ball = AcquireBall();
+                    ball.Color = color;
+                    ball.DistanceAlongPath = seg.HeadDistance - i * _model.Config.BallDiameter;
+                    _path.Sample(ball.DistanceAlongPath, out var pos, out _);
+                    ball.View = SpawnView(color, pos);
+                    seg.Balls.Add(ball);
+                    _liveViews[ball] = ball.View;
+                }
+            }
         }
 
         // ---- Tick ---------------------------------------------------------
