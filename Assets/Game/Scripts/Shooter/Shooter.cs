@@ -85,8 +85,15 @@ namespace Game.Shooter
             var color = _ammo.Consume();
             _cooldownTimer = _fireCooldown;
 
-            var projectile = _pool.Get(_projectilePrefab, _muzzle.position, _muzzle.rotation, null);
-            projectile.Launch(color, _database.Get(color), _muzzle.up * _projectileSpeed, _chain, _pool);
+            // Fire direction is the muzzle's local +Z (its forward). For the
+            // top-down orthographic setup, place the shooter at -Z with the
+            // muzzle un-rotated and projectiles travel along world +Z toward
+            // the chain. To use a different convention, simply rotate the
+            // muzzle child — its forward vector defines the firing direction.
+            var velocity   = _muzzle.forward * _projectileSpeed;
+            var spawnRot   = Quaternion.LookRotation(velocity.sqrMagnitude > 0f ? velocity : _muzzle.forward, Vector3.up);
+            var projectile = _pool.Get(_projectilePrefab, _muzzle.position, spawnRot, null);
+            projectile.Launch(color, _database.Get(color), velocity, _chain, _pool);
             _bus?.Publish(new ProjectileFiredEvent(color, _muzzle.position));
         }
 
