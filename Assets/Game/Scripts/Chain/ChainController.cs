@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Game.Balls;
 using Game.Core.Events;
 using Game.Core.Pooling;
@@ -68,7 +69,7 @@ namespace Game.Chain
             _bus = bus;
             _fsm = fsm;
             _model.Config = _level.BuildChainConfig();
-            _spawner.Configure(_level.SpawnQueue, _level.SpawnInterval);
+            _spawner.Configure(_level.SpawnQueue.ToList(), _level.SpawnInterval);
 
             // Initial chain: pre-place every ball at its correct distance in
             // one segment. We can't reuse SpawnAtTail here because that runtime

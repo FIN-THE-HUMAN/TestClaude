@@ -15,7 +15,7 @@ namespace Game.Balls
     public sealed class BallDefinition : ScriptableObject
     {
         [SerializeField] private BallColor _color = BallColor.Red;
-        [SerializeField] private Color     _displayColor = Color.red;
+        [SerializeField] private Color     _displayColor = UnityEngine.Color.red;
         [Tooltip("Visual prefab. Must contain a BallView component on the root.")]
         [SerializeField] private BallView  _viewPrefab;
         [Tooltip("Optional VFX prefab spawned on match removal. Falls back to a global default.")]
