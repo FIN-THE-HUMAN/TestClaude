@@ -50,7 +50,8 @@ namespace Game.Shooter
         {
             _bus = bus;
             _fsm = fsm;
-            var source = new RandomAmmoSource(_level.AvailableColors);
+            var palette = _level.ResolvePalette(_database);
+            var source = new RandomAmmoSource(palette);
             _ammo = new ShooterAmmo(source, bus);
             _ammo.Changed += RefreshPreviews;
             _ammo.Prime();

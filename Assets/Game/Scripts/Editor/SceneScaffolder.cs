@@ -51,8 +51,9 @@ namespace Game.EditorTools
 
             // ---- Assets first: prefabs depend on materials, SOs depend on prefabs.
             var materials   = CreateBallMaterials(standardShader);
-            var ballPrefab  = CreateBallViewPrefab(standardShader);
-            var projPrefab  = CreateProjectilePrefab(standardShader);
+            var baseMat     = CreateBallBaseMaterial(standardShader);
+            var ballPrefab  = CreateBallViewPrefab(baseMat);
+            var projPrefab  = CreateProjectilePrefab(baseMat);
             var defs        = CreateBallDefinitions(ballPrefab, materials);
             var database    = CreateBallDatabase(defs);
             var level       = CreateLevelDefinition();
@@ -133,12 +134,26 @@ namespace Game.EditorTools
             return dict;
         }
 
-        private static GameObject CreateBallViewPrefab(Shader shader)
+        private static Material CreateBallBaseMaterial(Shader shader)
+        {
+            var path = $"{GeneratedRoot}/Materials/Mat_BallBase.mat";
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+
+            var mat = new Material(shader) { name = "Mat_BallBase" };
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+            if (mat.HasProperty("_Color"))     mat.SetColor("_Color", Color.white);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
+        private static GameObject CreateBallViewPrefab(Material baseMat)
         {
             // Build the prefab source in the scene, save it as an asset, then destroy the scene copy.
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "BallView";
-            go.transform.localScale = Vector3.one * 0.5f; // diameter ≈ 0.5 (matches ChainConfig.Default)
+            // Visual diameter 0.4; ChainConfig.BallDiameter 0.5 leaves a small gap between balls.
+            go.transform.localScale = Vector3.one * 0.4f;
 
             var collider = go.GetComponent<SphereCollider>();
             collider.isTrigger = true; // chain balls are triggers for projectile detection
@@ -152,9 +167,7 @@ namespace Game.EditorTools
             so.FindProperty("_visualRoot").objectReferenceValue = go.transform;
             so.ApplyModifiedProperties();
 
-            // Default material so the prefab itself is visible in the inspector preview.
-            var defaultMat = new Material(shader) { name = "Mat_BallPlaceholder" };
-            go.GetComponent<MeshRenderer>().sharedMaterial = defaultMat;
+            go.GetComponent<MeshRenderer>().sharedMaterial = baseMat;
 
             var path = $"{PrefabsRoot}/BallView.prefab";
             var asset = PrefabUtility.SaveAsPrefabAsset(go, path);
@@ -162,11 +175,11 @@ namespace Game.EditorTools
             return asset;
         }
 
-        private static GameObject CreateProjectilePrefab(Shader shader)
+        private static GameObject CreateProjectilePrefab(Material baseMat)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "Projectile";
-            go.transform.localScale = Vector3.one * 0.45f;
+            go.transform.localScale = Vector3.one * 0.38f;
 
             var collider = go.GetComponent<SphereCollider>();
             collider.isTrigger = true;
@@ -189,8 +202,7 @@ namespace Game.EditorTools
             soProj.FindProperty("_rigidbody").objectReferenceValue  = rb;
             soProj.ApplyModifiedProperties();
 
-            var mat = new Material(shader) { name = "Mat_Projectile" };
-            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.GetComponent<MeshRenderer>().sharedMaterial = baseMat;
 
             var path = $"{PrefabsRoot}/Projectile.prefab";
             var asset = PrefabUtility.SaveAsPrefabAsset(go, path);
@@ -217,6 +229,8 @@ namespace Game.EditorTools
                 var disp = mats.TryGetValue(color, out var m) ? m.color : Color.white;
                 so.FindProperty("_displayColor").colorValue = disp;
                 so.FindProperty("_viewPrefab").objectReferenceValue = prefabView;
+                if (mats.TryGetValue(color, out var mat))
+                    so.FindProperty("_material").objectReferenceValue = mat;
                 so.FindProperty("_scorePerBall").intValue = 10;
                 so.ApplyModifiedProperties();
 
@@ -257,20 +271,24 @@ namespace Game.EditorTools
             cfg.FindPropertyRelative("MergeEpsilon").floatValue    = 0.001f;
             cfg.FindPropertyRelative("MinMatch").intValue          = 3;
 
-            SetEnumList(so, "_availableColors", new[] { BallColor.Red, BallColor.Green, BallColor.Blue });
+            var palette = new[]
+            {
+                BallColor.Red, BallColor.Green, BallColor.Blue,
+                BallColor.Yellow, BallColor.Purple,
+            };
+            SetEnumList(so, "_availableColors", palette);
+            so.FindProperty("_useAllDatabaseColors").boolValue = false;
+            so.FindProperty("_chainSpawnMode").enumValueIndex = (int)ChainSpawnMode.RandomFromPalette;
+            so.FindProperty("_randomSpawnCount").intValue = 60;
 
-            // Pre-place a short rainbow so matches are obvious during the smoke test.
+            // Pre-place a short mix so every palette colour is visible at start.
             SetEnumList(so, "_initialBalls", new[]
             {
-                BallColor.Red, BallColor.Red, BallColor.Green, BallColor.Blue,
-                BallColor.Green, BallColor.Blue, BallColor.Red, BallColor.Green,
+                BallColor.Red, BallColor.Yellow, BallColor.Green, BallColor.Blue,
+                BallColor.Purple, BallColor.Green, BallColor.Red, BallColor.Blue,
             });
 
-            // Drip-feed more balls so the chain keeps growing.
-            var queue = new List<BallColor>(60);
-            for (int i = 0; i < 60; i++)
-                queue.Add(new[] { BallColor.Red, BallColor.Green, BallColor.Blue }[i % 3]);
-            SetEnumList(so, "_spawnQueue", queue.ToArray());
+            SetEnumList(so, "_spawnQueue", System.Array.Empty<BallColor>());
             so.FindProperty("_spawnInterval").floatValue   = 0.6f;
             so.FindProperty("_scoreMultiplier").intValue   = 1;
 
@@ -369,7 +387,7 @@ namespace Game.EditorTools
             nextPreview.name = "NextPreview";
             nextPreview.transform.SetParent(shooterGo.transform, false);
             nextPreview.transform.localPosition = new Vector3(-0.9f, 0f, -0.2f);
-            nextPreview.transform.localScale = Vector3.one * 0.4f;
+            nextPreview.transform.localScale = Vector3.one * 0.32f;
 
             var shooter = shooterGo.AddComponent<Shooter.Shooter>();
             {

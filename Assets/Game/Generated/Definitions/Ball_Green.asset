@@ -15,5 +15,6 @@ MonoBehaviour:
   _color: 2
   _displayColor: {r: 0.3, g: 0.85, b: 0.35, a: 1}
   _viewPrefab: {fileID: 4993428111298984623, guid: 98894cb4606533448a27a88a6dc26788, type: 3}
+  _material: {fileID: 2100000, guid: 484415ad8464e8247ab4e0698e39da51, type: 2}
   _popVfxPrefab: {fileID: 0}
   _scorePerBall: 10

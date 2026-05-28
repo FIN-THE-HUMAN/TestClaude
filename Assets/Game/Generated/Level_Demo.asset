@@ -14,14 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Runtime::Game.Level.LevelDefinition
   _displayName: Demo Level
   _chainConfig:
-    BallDiameter: 0.5
+    BallDiameter: 1
     ForwardSpeed: 1
     CollapseCatchUp: 6
     MergeEpsilon: 0.001
     MinMatch: 3
-  _availableColors: 010203
-  _initialBalls: 0101020302030102
-  _spawnQueue: 010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203010203
-  _spawnInterval: 0.6
+  _availableColors: 01020304
+  _useAllDatabaseColors: 0
+  _initialBalls: 
+  _chainSpawnMode: 1
+  _randomSpawnCount: 60
+  _spawnQueue: 
+  _spawnInterval: 1.2
   _scoreMultiplier: 1
   _specialBalls: []

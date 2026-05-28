@@ -69,7 +69,13 @@ namespace Game.Chain
             _bus = bus;
             _fsm = fsm;
             _model.Config = _level.BuildChainConfig();
-            _spawner.Configure(_level.SpawnQueue.ToList(), _level.SpawnInterval);
+            var palette = _level.ResolvePalette(_ballDatabase);
+            _spawner.Configure(
+                _level.ChainSpawnMode,
+                _level.SpawnQueue.ToList(),
+                palette,
+                _level.SpawnInterval,
+                _level.RandomSpawnCount);
 
             // Initial chain: pre-place every ball at its correct distance in
             // one segment. We can't reuse SpawnAtTail here because that runtime
@@ -144,7 +150,7 @@ namespace Game.Chain
                 _fsm.ChangeState<LoseState>();
 
             // 6. Win condition.
-            if (_spawner.QueueEmpty && _model.TotalBallCount == 0)
+            if (_spawner.SpawningComplete && _model.TotalBallCount == 0)
                 _fsm.ChangeState<WinState>();
         }
 
@@ -300,6 +306,7 @@ namespace Game.Chain
 
         private void SyncViews()
         {
+            float dt = Time.deltaTime;
             for (int s = 0; s < _model.Segments.Count; s++)
             {
                 var seg = _model.Segments[s];
@@ -308,8 +315,16 @@ namespace Game.Chain
                     var ball = seg.Balls[i];
                     if (ball.View == null) continue;
                     _path.Sample(ball.DistanceAlongPath, out var pos, out var tan);
-                    var rot = tan.sqrMagnitude > 0f ? Quaternion.LookRotation(tan, Vector3.up) : Quaternion.identity;
-                    ball.View.SetWorldPose(pos, rot);
+
+                    if (ball.LastRollDistance < 0f)
+                        ball.LastRollDistance = ball.DistanceAlongPath;
+
+                    float distDelta = ball.DistanceAlongPath - ball.LastRollDistance;
+                    if (distDelta < 0f) distDelta = 0f;
+                    ball.LastRollDistance = ball.DistanceAlongPath;
+                    float alongSpeed = dt > 0f ? distDelta / dt : 0f;
+
+                    ball.View.SetChainPose(pos, tan, alongSpeed, dt);
 
                     // Register newly-created views in the live map. (Tail-spawn
                     // and projectile-insert both add here; doing it once at

@@ -56,5 +56,18 @@ namespace Game.Balls
                 if (Get(allowed[i]) != null) buffer[n++] = allowed[i];
             return n;
         }
+
+        /// <summary>Writes every defined colour into <paramref name="buffer"/>.</summary>
+        public int FillAllDefined(BallColor[] buffer)
+        {
+            int n = 0;
+            for (int i = 0; i < _definitions.Count && n < buffer.Length; i++)
+            {
+                var def = _definitions[i];
+                if (def == null) continue;
+                buffer[n++] = def.Color;
+            }
+            return n;
+        }
     }
 }

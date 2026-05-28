@@ -18,6 +18,8 @@ namespace Game.Balls
         [SerializeField] private Color     _displayColor = UnityEngine.Color.red;
         [Tooltip("Visual prefab. Must contain a BallView component on the root.")]
         [SerializeField] private BallView  _viewPrefab;
+        [Tooltip("Shared material for this colour. Assigned to the renderer on spawn.")]
+        [SerializeField] private Material  _material;
         [Tooltip("Optional VFX prefab spawned on match removal. Falls back to a global default.")]
         [SerializeField] private GameObject _popVfxPrefab;
         [SerializeField] private int _scorePerBall = 10;
@@ -25,6 +27,7 @@ namespace Game.Balls
         public BallColor  Color         => _color;
         public Color      DisplayColor  => _displayColor;
         public BallView   ViewPrefab    => _viewPrefab;
+        public Material   Material      => _material;
         public GameObject PopVfxPrefab  => _popVfxPrefab;
         public int        ScorePerBall  => _scorePerBall;
     }

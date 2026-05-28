@@ -23,6 +23,9 @@ namespace Game.Chain
         public float     DistanceAlongPath;
         public BallView  View;
 
+        /// <summary>Previous path distance, used to derive roll speed in <see cref="ChainController"/>.</summary>
+        public float LastRollDistance = -1f;
+
         // Used by the match resolver as a scratch flag. Public to avoid
         // wrapping in a parallel HashSet allocation; resolver clears it.
         public bool      ScratchMarked;
@@ -32,6 +35,7 @@ namespace Game.Chain
             Color = BallColor.None;
             DistanceAlongPath = 0f;
             View = null;
+            LastRollDistance  = -1f;
             ScratchMarked = false;
         }
     }
